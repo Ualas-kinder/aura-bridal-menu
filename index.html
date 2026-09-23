@@ -294,25 +294,28 @@
   .item{
     display:flex;
     align-items:baseline;
-    gap:10px;
+    gap:8px;
     margin-bottom:14px;
-    flex-wrap:wrap;
   }
 
   .item-name{
+    flex:0 1 auto;
+    min-width:0;
     font-size:16.5px;
     font-weight:600;
     color:var(--ink);
   }
 
   .dots{
-    flex:1 1 40px;
-    min-width:16px;
+    flex:1 1 20px;
+    min-width:12px;
+    align-self:flex-end;
+    margin-bottom:5px;
     border-bottom:1px dotted #b9a98f;
-    transform:translateY(-4px);
   }
 
   .price{
+    flex:0 0 auto;
     font-family:'Cormorant Garamond', serif;
     font-style:italic;
     font-size:15.5px;
@@ -534,33 +537,15 @@
     margin:0 0 22px;
   }
 
-  .em-form{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-  }
-
-  .exit-modal input[type="tel"]{
-    font-family:'EB Garamond', serif;
-    font-size:16px;
-    padding:13px 14px;
-    border:1px solid var(--rule);
-    background:var(--ivory);
-    color:var(--ink);
-    text-align:center;
-  }
-  .exit-modal input[type="tel"]::placeholder{ color:#a3937f; }
-  .exit-modal input[type="tel"]:focus{
-    outline:2px solid var(--accent);
-    outline-offset:1px;
-  }
-
   .em-submit{
+    display:block;
     font-family:'Jost', sans-serif;
     font-size:13px;
     font-weight:500;
     letter-spacing:0.12em;
     text-transform:uppercase;
+    text-decoration:none;
+    text-align:center;
     background:var(--ink);
     color:var(--paper);
     border:1px solid var(--ink);
@@ -578,31 +563,6 @@
     line-height:1.5;
   }
 
-  /* ---------- Fallback toast (copy-to-clipboard confirmation) ---------- */
-  .toast{
-    position:fixed;
-    left:50%;
-    bottom:calc(78px + env(safe-area-inset-bottom, 0px));
-    transform:translate(-50%, 8px);
-    z-index:60;
-    width:calc(100% - 40px);
-    max-width:320px;
-    background:var(--ink);
-    color:var(--paper);
-    font-family:'Jost', sans-serif;
-    font-size:12px;
-    line-height:1.5;
-    letter-spacing:0.01em;
-    text-align:center;
-    padding:12px 16px;
-    opacity:0;
-    pointer-events:none;
-    transition:opacity 0.2s ease, transform 0.2s ease;
-  }
-  .toast.active{
-    opacity:1;
-    transform:translate(-50%, 0);
-  }
 </style>
 </head>
 <body>
@@ -800,16 +760,11 @@
       <button class="exit-modal-close" id="exitClose" aria-label="Close">&times;</button>
       <p class="em-kicker">Before You Go</p>
       <h2 class="em-title">Take 15% Off Your First Visit</h2>
-      <p class="em-copy">Add your number and tap below to text us. We will have your 15% bridal event discount ready when you book.</p>
-      <form class="em-form" id="exitForm">
-        <input type="tel" inputmode="tel" id="exitPhone" placeholder="Your phone number" required>
-        <button type="submit" class="em-submit">Text Us For 15% Off</button>
-      </form>
+      <p class="em-copy">Tap below to text us. We will have your 15% bridal event discount ready when you book.</p>
+      <a class="em-submit" id="exitTextBtn" href="#">Text Us For 15% Off</a>
       <p class="em-fine">Opens your messages app, just tap send.</p>
     </div>
   </div>
-
-  <div class="toast" id="toast"></div>
 
   <script src="swiper-bundle.min.js"></script>
   <script>
@@ -827,8 +782,6 @@
 
   <script>
     (function(){
-      var AURA_PHONE = '(832) 834-4090';
-
       // iOS wants "number&body=", Android/others want "number?body="
       var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
       var smsSep = isIOS ? '&' : '?';
@@ -836,61 +789,19 @@
         return 'sms:+18328344090' + smsSep + 'body=' + encodeURIComponent(body);
       }
 
-      var toastEl = document.getElementById('toast');
-      var toastTimer = null;
-      function showToast(msg){
-        toastEl.textContent = msg;
-        toastEl.classList.add('active');
-        if(toastTimer) clearTimeout(toastTimer);
-        toastTimer = setTimeout(function(){ toastEl.classList.remove('active'); }, 5000);
-      }
-
-      function copyText(text){
-        try{
-          if(navigator.clipboard && navigator.clipboard.writeText){
-            navigator.clipboard.writeText(text).catch(function(){ legacyCopy(text); });
-          }else{
-            legacyCopy(text);
-          }
-        }catch(err){
-          legacyCopy(text);
-        }
-      }
-      function legacyCopy(text){
-        try{
-          var ta = document.createElement('textarea');
-          ta.value = text;
-          ta.style.position = 'fixed';
-          ta.style.opacity = '0';
-          document.body.appendChild(ta);
-          ta.focus();
-          ta.select();
-          document.execCommand('copy');
-          document.body.removeChild(ta);
-        }catch(err){}
-      }
-
-      // Some viewers (public links opened inside a sandboxed embed) silently
-      // block sms: links, so we always back the attempt with a copy + toast.
-      function attemptSms(body){
-        window.location.href = smsLink(body);
-        copyText(AURA_PHONE);
-        showToast('If Messages did not open, text us directly at ' + AURA_PHONE + ' (copied to your clipboard).');
-      }
-
       var textBtn = document.getElementById('textUsBtn');
       if(textBtn){
         textBtn.href = smsLink("Hi Aura! I'd love to learn more about bridal treatments before my wedding.");
-        textBtn.addEventListener('click', function(){
-          copyText(AURA_PHONE);
-          showToast('If Messages did not open, text us directly at ' + AURA_PHONE + ' (copied to your clipboard).');
-        });
+      }
+
+      var exitTextBtn = document.getElementById('exitTextBtn');
+      if(exitTextBtn){
+        exitTextBtn.href = smsLink("Hi Aura! I'd like to claim my 15% bridal event discount.");
+        exitTextBtn.addEventListener('click', closeModal);
       }
 
       var shown = false;
       var backdrop = document.getElementById('exitModal');
-      var form = document.getElementById('exitForm');
-      var phoneInput = document.getElementById('exitPhone');
       var closeBtn = document.getElementById('exitClose');
 
       function openModal(){
@@ -943,17 +854,6 @@
       // Last-resort fallback for visitors who neither scroll to the bottom
       // nor trigger a back gesture within a reasonable browsing window
       setTimeout(openModal, 60000);
-
-      form.addEventListener('submit', function(e){
-        e.preventDefault();
-        var phone = phoneInput.value.trim();
-        if(!phone){
-          phoneInput.focus();
-          return;
-        }
-        closeModal();
-        attemptSms("Hi Aura! I'd like to claim my 15% bridal event discount. My number is " + phone + ".");
-      });
     })();
   </script>
 
