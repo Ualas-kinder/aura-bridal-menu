@@ -915,6 +915,21 @@
         }
       });
 
+      // Mobile: reaching the footer means they have seen the whole menu,
+      // the closest thing to "exit intent" a phone can signal
+      var footerEl = document.querySelector('footer');
+      if(footerEl && 'IntersectionObserver' in window){
+        var footerObserver = new IntersectionObserver(function(entries){
+          entries.forEach(function(entry){
+            if(entry.isIntersecting){
+              openModal();
+              footerObserver.disconnect();
+            }
+          });
+        }, { threshold: 0.4 });
+        footerObserver.observe(footerEl);
+      }
+
       // Mobile: intercept the back gesture/button once (skip if embedded in a frame)
       try{
         if(window.self === window.top && window.history && window.history.pushState){
@@ -926,9 +941,9 @@
         }
       }catch(err){}
 
-      // Mobile fallback: most visitors won't trigger a real exit signal,
-      // so offer it once after a short, unhurried browsing window
-      setTimeout(openModal, 45000);
+      // Last-resort fallback for visitors who neither scroll to the bottom
+      // nor trigger a back gesture within a reasonable browsing window
+      setTimeout(openModal, 60000);
 
       form.addEventListener('submit', function(e){
         e.preventDefault();
